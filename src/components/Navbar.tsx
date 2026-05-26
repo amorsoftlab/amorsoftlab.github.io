@@ -14,7 +14,18 @@ const Navbar: React.FC = () => {
         </Link>
         <nav className="nav-links">
           <Link to="/" style={{ color: !isAbout ? 'var(--text-primary)' : 'var(--text-secondary)' }}>Home</Link>
-          <a href="#products" onClick={e => { if (isAbout) { e.preventDefault(); window.location.hash = '/'; } }}>Projects</a>
+          <span 
+            style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}
+            onClick={() => {
+              if (isAbout) {
+                window.location.hash = '/';
+              } else {
+                document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          >
+            Projects
+          </span>
           <Link to="/about" style={{ color: isAbout ? 'var(--text-primary)' : 'var(--text-secondary)' }}>About Me</Link>
         </nav>
       </div>
