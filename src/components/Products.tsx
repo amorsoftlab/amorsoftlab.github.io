@@ -4,7 +4,7 @@ import { ExternalLink, Music } from 'lucide-react';
 const Products: React.FC = () => {
   return (
     <section id="products" className="products container">
-      <h2 className="section-title">Our Products</h2>
+      <h2 className="section-title">Projects</h2>
       
       <div style={{display: 'grid', gap: '32px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', maxWidth: '1000px', margin: '0 auto'}}>
         
