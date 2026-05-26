@@ -22,14 +22,19 @@ const Products: React.FC = () => {
           </div>
         </div>
         
-        {/* Upcoming Product Placeholder */}
-        <div className="product-card" style={{opacity: 0.6}}>
-          <div className="product-image" style={{background: 'rgba(255,255,255,0.05)'}}>
-            <span style={{fontSize: '24px', fontWeight: 600, color: 'var(--text-secondary)'}}>Coming Soon</span>
+        {/* EventDesk Card */}
+        <div className="product-card">
+          <div className="product-image" style={{
+            background: 'url("./eventdesk.png") center/cover no-repeat',
+            border: '1px solid rgba(255,255,255,0.05)'
+          }}>
           </div>
           <div className="product-content">
-            <h3>Next Gen App</h3>
-            <p>We are constantly working on new and exciting software. Stay tuned for our upcoming releases.</p>
+            <h3>EventDesk</h3>
+            <p>Modern, professional accounting software designed for event planners and businesses. Manage your finances seamlessly.</p>
+            <a href="https://github.com/amorsoftlab/eventdesk_release" target="_blank" rel="noreferrer" className="product-btn">
+              Explore EventDesk <ExternalLink size={18} />
+            </a>
           </div>
         </div>
 
