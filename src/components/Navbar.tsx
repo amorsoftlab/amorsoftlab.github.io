@@ -5,6 +5,7 @@ const Navbar: React.FC = () => {
     <header>
       <div className="container nav-container">
         <a href="#" className="nav-logo">
+          <img src="amor_softlab_logo.png" alt="Amor Softlab" style={{height: '36px', width: 'auto'}} />
           Amor Softlab
         </a>
         <nav className="nav-links">

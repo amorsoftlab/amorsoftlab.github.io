@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --bg-primary: #0a0a0f;
   --bg-secondary: rgba(20, 20, 30, 0.6);
