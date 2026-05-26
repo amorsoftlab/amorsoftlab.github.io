@@ -1,17 +1,21 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
+  const location = useLocation();
+  const isAbout = location.pathname === '/about';
+
   return (
     <header>
       <div className="container nav-container">
-        <a href="#" className="nav-logo">
+        <Link to="/" className="nav-logo">
           <img src="amor_softlab_logo.png" alt="Amor Softlab" style={{height: '36px', width: 'auto'}} />
           Amor Softlab
-        </a>
+        </Link>
         <nav className="nav-links">
-          <a href="#home">Home</a>
-          <a href="#products">Products</a>
-          <a href="#about">About Us</a>
+          <Link to="/" style={{ color: !isAbout ? 'var(--text-primary)' : 'var(--text-secondary)' }}>Home</Link>
+          <a href="#products" onClick={e => { if (isAbout) { e.preventDefault(); window.location.hash = '/'; } }}>Products</a>
+          <Link to="/about" style={{ color: isAbout ? 'var(--text-primary)' : 'var(--text-secondary)' }}>About Me</Link>
         </nav>
       </div>
     </header>
