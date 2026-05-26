@@ -1,5 +1,6 @@
 import React from 'react';
-import { ExternalLink, Music } from 'lucide-react';
+import { ExternalLink, Music, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Products: React.FC = () => {
   return (
@@ -16,9 +17,9 @@ const Products: React.FC = () => {
           <div className="product-content">
             <h3>Music Club</h3>
             <p>Stream, discover, and enjoy your favorite music. A beautiful desktop and mobile application available for Windows and Android.</p>
-            <a href="https://amorsoftlab.github.io/music_club_release/" className="product-btn">
-              Explore Music Club <ExternalLink size={18} />
-            </a>
+            <Link to="/music-club" className="product-btn">
+              Explore Music Club <ArrowRight size={18} />
+            </Link>
           </div>
         </div>
         
@@ -31,10 +32,10 @@ const Products: React.FC = () => {
           </div>
           <div className="product-content">
             <h3>EventDesk</h3>
-            <p>Modern, professional accounting software designed for event planners and businesses. Manage your finances seamlessly.</p>
-            <a href="https://github.com/amorsoftlab/eventdesk_release" target="_blank" rel="noreferrer" className="product-btn">
-              Explore EventDesk <ExternalLink size={18} />
-            </a>
+            <p>Premium Hall Booking Management Software. Seamlessly manage calendar slots, reservations, event schedules, and customer details all in one place.</p>
+            <Link to="/eventdesk" className="product-btn">
+              Explore EventDesk <ArrowRight size={18} />
+            </Link>
           </div>
         </div>
 
