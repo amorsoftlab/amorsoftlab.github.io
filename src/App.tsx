@@ -35,7 +35,7 @@ function App() {
           logoPath="music_club_logo.png" 
         />} />
         <Route path="/eventdesk" element={<ProjectPage 
-          repoName="eventdesk_release" 
+          repoName="event_desk" 
           title="EventDesk" 
           description="Premium Hall Booking Management Software. Seamlessly manage calendar slots, reservations, event schedules, and customer details all in one place." 
           imagePath="eventdesk.png" 
