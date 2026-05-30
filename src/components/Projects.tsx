@@ -11,7 +11,7 @@ export default function Projects({ products, setSelectedProductId }: ProjectsPro
   const navigate = useNavigate();
   const handleDownloadClick = (id: string) => {
     setSelectedProductId(id);
-    navigate('/downloads');
+    navigate(`/downloads/${id}`);
   };
 
   return (

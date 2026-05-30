@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Download, Calendar, HelpCircle, FileText, X, ChevronDown, ChevronUp, Image as ImageIcon, Heart } from 'lucide-react';
 import type { Product } from '../App';
 
@@ -25,7 +26,9 @@ interface DownloadsProps {
   setSelectedProductId: (id: string | null) => void;
 }
 
-export default function Downloads({ products, selectedProductId, setSelectedProductId }: DownloadsProps) {
+export default function Downloads({ products, selectedProductId }: DownloadsProps) {
+  const { productId: urlProductId } = useParams<{ productId: string }>();
+  const navigate = useNavigate();
   const [releases, setReleases] = useState<GithubRelease[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +52,9 @@ export default function Downloads({ products, selectedProductId, setSelectedProd
     return 'other';
   });
 
-  const selectedProduct = products.find(p => p.id === (selectedProductId || products[0]?.id));
+  // Resolve product: URL param > state > first product
+  const activeProductId = urlProductId || selectedProductId || products[0]?.id;
+  const selectedProduct = products.find(p => p.id === activeProductId);
 
   useEffect(() => {
     let isMounted = true;
@@ -138,11 +143,16 @@ export default function Downloads({ products, selectedProductId, setSelectedProd
     setActiveModal(null);
   };
 
+  if (!selectedProduct && products.length > 0) {
+    navigate(`/downloads/${products[0].id}`, { replace: true });
+    return null;
+  }
+
   if (!selectedProduct) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product not found</h2>
-        <button onClick={() => setSelectedProductId(products[0]?.id)} className="mt-4 text-primary-500 hover:underline">
+        <button onClick={() => navigate('/downloads')} className="mt-4 text-primary-500 hover:underline">
           Go back
         </button>
       </div>
@@ -154,6 +164,29 @@ export default function Downloads({ products, selectedProductId, setSelectedProd
 
   return (
     <div className="w-full bg-gray-50 dark:bg-[#0B0F19] min-h-screen relative pb-32">
+
+      {/* Product Selector Tabs */}
+      {products.length > 1 && (
+        <div className="bg-white dark:bg-[#0F172A] border-b border-gray-200 dark:border-white/5 sticky top-[73px] z-40">
+          <div className="px-4 sm:px-6 max-w-[80rem] mx-auto">
+            <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
+              {products.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => navigate(`/downloads/${p.id}`)}
+                  className={`shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                    p.id === activeProductId
+                      ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
+                  }`}
+                >
+                  {p.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Split Layout Header */}
       <div className="bg-white dark:bg-[#0F172A] border-b border-gray-200 dark:border-white/5 py-12 lg:py-20 transition-colors duration-300">

@@ -133,6 +133,13 @@ function AppLayout() {
               setSelectedProductId={setSelectedProductId}
             />
           } />
+          <Route path="/downloads/:productId" element={
+            <Downloads
+              products={products}
+              selectedProductId={selectedProductId}
+              setSelectedProductId={setSelectedProductId}
+            />
+          } />
           <Route path="/about" element={<About />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/home" replace />} />

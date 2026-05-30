@@ -26,7 +26,7 @@ export default function Navbar({ theme, toggleTheme, products = [], setSelectedP
     if (setSelectedProductId) {
       setSelectedProductId(id);
     }
-    navigate('/downloads');
+    navigate(`/downloads/${id}`);
   };
 
   return (
