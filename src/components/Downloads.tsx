@@ -93,17 +93,32 @@ export default function Downloads({ products, selectedProductId, setSelectedProd
       setLoading(true);
       setGlobalError(null);
       try {
-        const response = await fetch('/releases.json');
-        if (!response.ok) {
-          throw new Error('Failed to load release data.');
-        }
-        const data = await response.json();
+        // Fetch releases for all products directly from GitHub API
+        const releasesData: Record<string, GitHubRelease[]> = {};
+        
+        await Promise.all(
+          products.map(async (product) => {
+            const productRepo = getRepoPath(product.githubUrl || '');
+            if (!productRepo) return;
+            
+            try {
+              const response = await fetch(`https://api.github.com/repos/${productRepo}/releases`);
+              if (response.ok) {
+                releasesData[productRepo] = await response.json();
+              } else {
+                releasesData[productRepo] = [];
+              }
+            } catch (e) {
+              releasesData[productRepo] = [];
+            }
+          })
+        );
+
         if (isMounted) {
-          setAllReleases(data);
+          setAllReleases(releasesData);
         }
       } catch (err) {
         if (isMounted) {
-          // If we fail to fetch releases.json, we can fallback to live API or just show error
           console.error(err);
           setGlobalError('Failed to load release information. Please check GitHub directly.');
         }
