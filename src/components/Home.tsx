@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Code, Cpu, Globe, X, Heart } from 'lucide-react';
 
-export default function Home({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
+export default function Home() {
+  const navigate = useNavigate();
   const [showDonateModal, setShowDonateModal] = useState(false);
 
   // Prevent background scrolling when modal is open
@@ -42,13 +44,13 @@ export default function Home({ setActiveTab }: { setActiveTab: (tab: string) => 
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <button 
-              onClick={() => setActiveTab('projects')}
+              onClick={() => navigate('/projects')}
               className="bg-primary-500 hover:bg-primary-600 transition-colors h-14 px-8 rounded-full text-white text-base font-semibold shadow-xl shadow-primary-500/25 w-full sm:w-auto"
             >
               Explore Our Projects
             </button>
             <button 
-              onClick={() => setActiveTab('about')}
+              onClick={() => navigate('/about')}
               className="h-14 px-8 rounded-full border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/10 transition-colors text-base font-semibold w-full sm:w-auto"
             >
               Learn More About Us

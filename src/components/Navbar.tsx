@@ -1,18 +1,22 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sun, Moon, Terminal, ChevronDown } from 'lucide-react';
 import type { Product } from '../App';
 
 interface NavbarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   theme: string;
   toggleTheme: () => void;
   products?: Product[];
   setSelectedProductId?: (id: string) => void;
 }
 
-export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme, products = [], setSelectedProductId }: NavbarProps) {
-  const getTabClass = (tab: string) => {
-    if (activeTab === tab) {
+export default function Navbar({ theme, toggleTheme, products = [], setSelectedProductId }: NavbarProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const currentPath = location.hash.replace('#', '') || '/home';
+
+  const getTabClass = (path: string) => {
+    if (currentPath === path) {
       return "text-sm px-4 py-1.5 rounded-full bg-white dark:bg-white/10 font-medium text-gray-800 dark:text-white/90 shadow-sm transition-all";
     }
     return "text-gray-500 dark:text-gray-400 text-sm px-4 py-1.5 rounded-full hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-white/5 font-medium transition-all cursor-pointer";
@@ -22,7 +26,7 @@ export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme, pr
     if (setSelectedProductId) {
       setSelectedProductId(id);
     }
-    setActiveTab('downloads');
+    navigate('/downloads');
   };
 
   return (
@@ -34,7 +38,7 @@ export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme, pr
           <div className="flex items-center">
             <a 
               className="flex items-center gap-2 cursor-pointer group" 
-              onClick={() => setActiveTab('projects')}
+              onClick={() => navigate('/home')}
             >
               <div className="w-8 h-8 rounded-lg bg-primary-500 text-white flex items-center justify-center group-hover:bg-primary-600 transition-colors">
                 <Terminal size={18} strokeWidth={2.5} />
@@ -47,16 +51,16 @@ export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme, pr
 
           {/* Nav Links (Pill shape) */}
           <nav className="hidden lg:flex items-center bg-[#F9FAFB] dark:bg-white/5 rounded-full p-1 max-h-fit border border-gray-200 dark:border-transparent">
-            <button onClick={() => setActiveTab('home')} className={getTabClass('home')}>
+            <button onClick={() => navigate('/home')} className={getTabClass('/home')}>
               Home
             </button>
-            <button onClick={() => setActiveTab('projects')} className={getTabClass('projects')}>
+            <button onClick={() => navigate('/projects')} className={getTabClass('/projects')}>
               Projects
             </button>
             
             {/* Downloads Dropdown */}
             <div className="relative group/dropdown">
-              <button onClick={() => setActiveTab('downloads')} className={`${getTabClass('downloads')} flex items-center gap-1`}>
+              <button onClick={() => navigate('/downloads')} className={`${getTabClass('/downloads')} flex items-center gap-1`}>
                 Downloads
                 <ChevronDown size={14} className="opacity-50 group-hover/dropdown:rotate-180 transition-transform duration-200" />
               </button>
@@ -77,7 +81,7 @@ export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme, pr
               </div>
             </div>
 
-            <button onClick={() => setActiveTab('about')} className={getTabClass('about')}>
+            <button onClick={() => navigate('/about')} className={getTabClass('/about')}>
               About
             </button>
           </nav>

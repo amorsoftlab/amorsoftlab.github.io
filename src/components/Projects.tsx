@@ -1,16 +1,17 @@
+import { useNavigate } from 'react-router-dom';
 import { Terminal } from 'lucide-react';
 import type { Product } from '../App';
 
 interface ProjectsProps {
   products: Product[];
-  setActiveTab: (tab: string) => void;
   setSelectedProductId: (id: string) => void;
 }
 
-export default function Projects({ products, setActiveTab, setSelectedProductId }: ProjectsProps) {
+export default function Projects({ products, setSelectedProductId }: ProjectsProps) {
+  const navigate = useNavigate();
   const handleDownloadClick = (id: string) => {
     setSelectedProductId(id);
-    setActiveTab('downloads');
+    navigate('/downloads');
   };
 
   return (

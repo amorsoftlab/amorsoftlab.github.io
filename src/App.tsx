@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import Projects from './components/Projects';
@@ -17,8 +18,7 @@ export interface Product {
   githubUrl: string;
 }
 
-function App() {
-  const [activeTab, setActiveTab] = useState('home');
+function AppLayout() {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) return savedTheme;
@@ -74,7 +74,6 @@ function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Toggle theme handler
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
@@ -111,8 +110,6 @@ function App() {
   return (
     <div className="isolate flex flex-col min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-800 dark:text-gray-200">
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         theme={theme}
         toggleTheme={toggleTheme}
         products={products}
@@ -120,26 +117,38 @@ function App() {
       />
 
       <main className="flex-1 w-full pt-20">
-        {activeTab === 'home' && <Home setActiveTab={setActiveTab} />}
-        {activeTab === 'projects' && (
-          <Projects
-            products={products}
-            setActiveTab={setActiveTab}
-            setSelectedProductId={setSelectedProductId}
-          />
-        )}
-        {activeTab === 'downloads' && (
-          <Downloads
-            products={products}
-            selectedProductId={selectedProductId}
-            setSelectedProductId={setSelectedProductId}
-          />
-        )}
-        {activeTab === 'about' && <About />}
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/projects" element={
+            <Projects
+              products={products}
+              setSelectedProductId={setSelectedProductId}
+            />
+          } />
+          <Route path="/downloads" element={
+            <Downloads
+              products={products}
+              selectedProductId={selectedProductId}
+              setSelectedProductId={setSelectedProductId}
+            />
+          } />
+          <Route path="/about" element={<About />} />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/home" replace />} />
+        </Routes>
       </main>
 
       <Footer />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <HashRouter>
+      <AppLayout />
+    </HashRouter>
   );
 }
 
