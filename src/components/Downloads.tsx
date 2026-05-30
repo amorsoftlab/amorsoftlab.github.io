@@ -79,62 +79,52 @@ function getAssetType(filename: string) {
 }
 
 export default function Downloads({ products, selectedProductId, setSelectedProductId }: DownloadsProps) {
-  // Cache and status states mapped by repository
-  const [cache, setCache] = useState<Record<string, GitHubRelease[]>>({});
-  const [errors, setErrors] = useState<Record<string, string | null>>({});
-  const [loadingRepos, setLoadingRepos] = useState<Record<string, boolean>>({});
+  const [allReleases, setAllReleases] = useState<Record<string, GitHubRelease[]> | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const activeProduct = products.find((p) => p.id === selectedProductId) || products[0];
   const repo = getRepoPath(activeProduct?.githubUrl || '');
 
-  // Derived states from cache records
-  const releases = cache[repo] || [];
-  const error = errors[repo] || null;
-  const loading = loadingRepos[repo] || false;
-
   useEffect(() => {
-    if (!repo) return;
-
-    // Skip fetching if releases or errors are already cached
-    if (cache[repo] !== undefined || errors[repo] !== undefined) return;
-
     let isMounted = true;
 
-    const fetchReleases = async () => {
-      setLoadingRepos((prev) => ({ ...prev, [repo]: true }));
-      setErrors((prev) => ({ ...prev, [repo]: null }));
+    const fetchAllReleases = async () => {
+      setLoading(true);
+      setGlobalError(null);
       try {
-        const response = await fetch(`https://api.github.com/repos/${repo}/releases`);
+        const response = await fetch('/releases.json');
         if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('No public repository or releases found on GitHub.');
-          } else if (response.status === 403) {
-            throw new Error('GitHub API rate limit exceeded. Please try again later.');
-          }
-          throw new Error('Failed to retrieve download versions.');
+          throw new Error('Failed to load release data.');
         }
         const data = await response.json();
         if (isMounted) {
-          setCache((prev) => ({ ...prev, [repo]: data }));
+          setAllReleases(data);
         }
       } catch (err) {
         if (isMounted) {
-          const message = err instanceof Error ? err.message : 'An error occurred while fetching downloads.';
-          setErrors((prev) => ({ ...prev, [repo]: message }));
+          // If we fail to fetch releases.json, we can fallback to live API or just show error
+          console.error(err);
+          setGlobalError('Failed to load release information. Please check GitHub directly.');
         }
       } finally {
         if (isMounted) {
-          setLoadingRepos((prev) => ({ ...prev, [repo]: false }));
+          setLoading(false);
         }
       }
     };
 
-    fetchReleases();
+    if (!allReleases) {
+      fetchAllReleases();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [repo, cache, errors]);
+  }, [allReleases]);
+
+  const releases = allReleases?.[repo] || [];
+  const error = globalError;
 
   return (
     <section className="section">
