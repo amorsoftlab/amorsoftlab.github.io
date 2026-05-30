@@ -1,315 +1,446 @@
 import { useState, useEffect } from 'react';
-import { Download, Calendar, FileArchive, Laptop, HelpCircle, ChevronRight, BarChart, ExternalLink } from 'lucide-react';
-import type { Product } from './Projects';
-import { GithubIcon } from './icons';
+import { Download, Calendar, HelpCircle, FileText, X, ChevronDown, ChevronUp, Image as ImageIcon, Heart } from 'lucide-react';
+import type { Product } from '../App';
 
-interface DownloadsProps {
-  products: Product[];
-  selectedProductId: string;
-  setSelectedProductId: (id: string) => void;
-}
-
-// Helper to parse repo path (owner/name) from GitHub URL
-function getRepoPath(githubUrl: string): string {
-  if (!githubUrl) return '';
-  let clean = githubUrl.trim().replace(/\/+$/, '');
-  
-  // Strip .git extension if present at the end
-  if (clean.toLowerCase().endsWith('.git')) {
-    clean = clean.slice(0, -4);
-  }
-
-  if (clean.includes('github.com')) {
-    try {
-      const url = new URL(clean);
-      const parts = url.pathname.split('/').filter(Boolean);
-      if (parts.length >= 2) {
-        return `${parts[0]}/${parts[1]}`;
-      }
-    } catch {
-      // fallback
-    }
-  }
-  return clean;
-}
-
-interface GitHubAsset {
-  id: number;
+interface ReleaseAsset {
   name: string;
   size: number;
   download_count: number;
   browser_download_url: string;
 }
 
-interface GitHubRelease {
+interface GithubRelease {
   id: number;
   tag_name: string;
   name: string;
-  published_at: string;
   body: string;
-  html_url: string;
+  published_at: string;
   prerelease: boolean;
-  assets: GitHubAsset[];
+  assets: ReleaseAsset[];
 }
 
-// Helper to format file sizes
-function formatBytes(bytes: number, decimals = 1) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
-
-// Helper to format date
-function formatDate(dateString: string) {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
-}
-
-// Helper to identify platform/file-type from asset name
-function getAssetType(filename: string) {
-  const lower = filename.toLowerCase();
-  if (lower.endsWith('.exe')) return { label: 'Windows', type: 'win' };
-  if (lower.endsWith('.dmg') || lower.endsWith('.pkg')) return { label: 'macOS', type: 'mac' };
-  if (lower.endsWith('.deb') || lower.endsWith('.rpm') || lower.endsWith('.appimage')) return { label: 'Linux', type: 'linux' };
-  if (lower.endsWith('.zip') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.rar')) return { label: 'Archive', type: 'zip' };
-  return { label: 'Build File', type: 'file' };
+interface DownloadsProps {
+  products: Product[];
+  selectedProductId: string | null;
+  setSelectedProductId: (id: string | null) => void;
 }
 
 export default function Downloads({ products, selectedProductId, setSelectedProductId }: DownloadsProps) {
-  const [allReleases, setAllReleases] = useState<Record<string, GitHubRelease[]> | null>(null);
-  const [globalError, setGlobalError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [releases, setReleases] = useState<GithubRelease[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Modal state
+  const [activeModal, setActiveModal] = useState<'downloads' | 'changelogs' | 'donate' | null>(null);
+  
+  // Accordion state for Old Versions
+  const [showOldVersions, setShowOldVersions] = useState(false);
+  const [expandedOldVersionId, setExpandedOldVersionId] = useState<number | null>(null);
+  
+  // OS Detection
+  const [userOS] = useState<'windows' | 'mac' | 'linux' | 'android' | 'other'>(() => {
+    if (typeof window === 'undefined') return 'other';
+    const platform = window.navigator.platform.toLowerCase();
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    if (platform.includes('win')) return 'windows';
+    if (platform.includes('mac')) return 'mac';
+    if (platform.includes('linux')) return 'linux';
+    if (userAgent.includes('android')) return 'android';
+    return 'other';
+  });
 
-  const activeProduct = products.find((p) => p.id === selectedProductId) || products[0];
-  const repo = getRepoPath(activeProduct?.githubUrl || '');
+  const selectedProduct = products.find(p => p.id === (selectedProductId || products[0]?.id));
 
   useEffect(() => {
     let isMounted = true;
-
-    const fetchAllReleases = async () => {
-      setLoading(true);
-      setGlobalError(null);
-      try {
-        // Fetch releases for all products directly from GitHub API
-        const releasesData: Record<string, GitHubRelease[]> = {};
+    
+    if (selectedProduct) {
+      const fetchReleases = async () => {
+        await Promise.resolve(); // Defer to avoid synchronous setState in effect
+        if (!isMounted) return;
+        setLoading(true);
+        setError(null);
+        setReleases([]);
         
-        await Promise.all(
-          products.map(async (product) => {
-            const productRepo = getRepoPath(product.githubUrl || '');
-            if (!productRepo) return;
-            
-            try {
-              const response = await fetch(`https://api.github.com/repos/${productRepo}/releases`);
-              if (response.ok) {
-                releasesData[productRepo] = await response.json();
-              } else {
-                releasesData[productRepo] = [];
-              }
-            } catch (e) {
-              releasesData[productRepo] = [];
-            }
-          })
-        );
+        let githubRepoPath = selectedProduct.githubUrl.split('github.com/')[1];
+        if (githubRepoPath?.endsWith('.git')) {
+          githubRepoPath = githubRepoPath.slice(0, -4);
+        }
+        if (githubRepoPath?.endsWith('/')) {
+          githubRepoPath = githubRepoPath.slice(0, -1);
+        }
+        
+        if (!githubRepoPath) {
+          if (isMounted) setError('Invalid GitHub URL');
+          if (isMounted) setLoading(false);
+          return;
+        }
 
-        if (isMounted) {
-          setAllReleases(releasesData);
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error(err);
-          setGlobalError('Failed to load release information. Please check GitHub directly.');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+        const apiEndpoint = `https://api.github.com/repos/${githubRepoPath}/releases`;
 
-    if (!allReleases) {
-      fetchAllReleases();
+        try {
+          const res = await fetch(apiEndpoint);
+          if (!res.ok) throw new Error('Failed to fetch releases. Repository might be private or rate limited.');
+          const data = await res.json();
+          if (isMounted) setReleases(data);
+        } catch (err: unknown) {
+          if (isMounted) setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+          if (isMounted) setLoading(false);
+        }
+      };
+
+      fetchReleases();
     }
 
-    return () => {
-      isMounted = false;
-    };
-  }, [allReleases]);
+    return () => { isMounted = false; };
+  }, [selectedProduct]);
 
-  const releases = allReleases?.[repo] || [];
-  const error = globalError;
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    if (activeModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [activeModal]);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getAssetMetadata = (assetName: string) => {
+    const name = assetName.toLowerCase();
+    if (name.endsWith('.exe')) return { type: 'windows', icon: '⊞', label: 'Windows Installer' };
+    if (name.endsWith('.msi')) return { type: 'windows', icon: '⊞', label: 'Windows MSI' };
+    if (name.endsWith('.dmg')) return { type: 'mac', icon: '🍎', label: 'macOS DMG' };
+    if (name.endsWith('.appimage')) return { type: 'linux', icon: '🐧', label: 'Linux AppImage' };
+    if (name.endsWith('.deb')) return { type: 'linux', icon: '🐧', label: 'Debian/Ubuntu' };
+    if (name.endsWith('.apk')) return { type: 'android', icon: '🤖', label: 'Android APK' };
+    if (name.endsWith('.zip') || name.endsWith('.tar.gz')) return { type: 'archive', icon: '📦', label: 'Archive/Source' };
+    return { type: 'other', icon: '📄', label: 'File' };
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+
+  if (!selectedProduct) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product not found</h2>
+        <button onClick={() => setSelectedProductId(products[0]?.id)} className="mt-4 text-primary-500 hover:underline">
+          Go back
+        </button>
+      </div>
+    );
+  }
+
+  const latestRelease = releases[0];
+  const oldReleases = releases.slice(1);
 
   return (
-    <section className="section">
-      <div className="container">
-        <div className="section-header">
-          <h2>Software Downloads</h2>
-          <p>Retrieve installers, binary packages, and updates direct from our GitHub build pipelines</p>
-        </div>
+    <div className="w-full bg-gray-50 dark:bg-[#0B0F19] min-h-screen relative pb-32">
+      
+      {/* Split Layout Header */}
+      <div className="bg-white dark:bg-[#0F172A] border-b border-gray-200 dark:border-white/5 py-12 lg:py-20 transition-colors duration-300">
+        <div className="px-4 sm:px-6 max-w-[80rem] mx-auto">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
+            
+            {/* Left Side: Photo */}
+            <div className="w-full md:w-1/3 shrink-0">
+              <div className="aspect-square rounded-3xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex flex-col items-center justify-center shadow-xl shadow-gray-200/50 dark:shadow-none overflow-hidden relative group">
+                <ImageIcon size={64} className="text-gray-300 dark:text-gray-700 mb-4 group-hover:scale-110 transition-transform duration-500" />
+                <span className="text-gray-400 dark:text-gray-600 font-medium text-sm">Product Image</span>
+                {/* Fallback gradient if no image */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-blue-500/5 mix-blend-overlay" />
+              </div>
+            </div>
 
-        <div className="downloads-layout">
-          {/* Sidebar */}
-          <aside className="downloads-sidebar">
-            <div className="downloads-sidebar-header">Select Product</div>
-            <div className="product-selector-list">
-              {products.map((product) => (
-                <button
-                  key={product.id}
-                  className={`selector-item ${selectedProductId === product.id ? 'active' : ''}`}
-                  onClick={() => setSelectedProductId(product.id)}
+            {/* Right Side: Info & Buttons */}
+            <div className="w-full md:w-2/3 flex flex-col justify-center text-center md:text-left">
+              <div className="inline-flex items-center justify-center md:justify-start px-3 py-1 bg-primary-500/10 text-primary-600 dark:text-primary-400 text-xs font-bold rounded-full mb-6 uppercase tracking-wider w-max md:mx-0 mx-auto">
+                {selectedProduct.category}
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+                {selectedProduct.title}
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 text-lg mb-8 leading-relaxed max-w-2xl">
+                {selectedProduct.description}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <button 
+                  onClick={() => latestRelease ? setActiveModal('downloads') : null}
+                  disabled={!latestRelease || loading}
+                  className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold transition-colors shadow-lg shadow-primary-500/25"
                 >
-                  <Laptop size={16} className="selector-icon" />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.95rem' }}>{product.title}</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-muted)' }}>
-                      {product.category}
-                    </span>
-                  </div>
-                  <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.5 }} />
+                  <Download size={20} />
+                  Download
                 </button>
-              ))}
-            </div>
-          </aside>
-
-          {/* Main content area */}
-          <main className="downloads-content">
-            <div className="glass-card" style={{ padding: '20px 28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.4rem', marginBottom: '4px' }}>{activeProduct?.title}</h3>
-                  <a
-                    href={activeProduct?.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontSize: '0.85rem', color: 'var(--accent-light)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <GithubIcon size={12} /> {repo}
-                  </a>
-                </div>
-                <span className="badge">{activeProduct?.status}</span>
-              </div>
-            </div>
-
-            {loading && (
-              <div className="releases-loading glass-card">
-                <div className="spinner"></div>
-                <p>Loading releases and installer files from GitHub...</p>
-              </div>
-            )}
-
-            {error && (
-              <div className="glass-card" style={{ padding: '32px', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <p style={{ color: '#ef4444', fontWeight: 600, marginBottom: '16px' }}>{error}</p>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                  You can browse all releases and source codes directly on the GitHub releases page for this product.
-                </p>
-                <a
-                  href={`${activeProduct?.githubUrl}/releases`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary"
+                <button 
+                  onClick={() => latestRelease ? setActiveModal('changelogs') : null}
+                  disabled={!latestRelease || loading}
+                  className="flex items-center gap-2 px-8 py-3.5 rounded-full border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-50 font-semibold transition-colors"
                 >
-                  <ExternalLink size={16} /> Open GitHub Releases
-                </a>
+                  <FileText size={20} />
+                  Change Log
+                </button>
+                <button 
+                  onClick={() => setActiveModal('donate')}
+                  className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-pink-500/25 hover:scale-105 duration-200"
+                >
+                  <Heart size={20} className="fill-white/20" />
+                  Donate
+                </button>
               </div>
-            )}
+              
+              {loading && <p className="text-sm text-primary-500 mt-4 animate-pulse">Checking for latest version...</p>}
+            </div>
 
-            {!loading && !error && (
-              <>
-                {releases.length === 0 ? (
-                  <div className="releases-empty glass-card">
-                    <HelpCircle size={48} />
-                    <h4 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--text-primary)' }}>No releases available yet</h4>
-                    <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 20px' }}>
-                      This repository does not have any tags or published release assets yet.
-                    </p>
-                    <a
-                      href={activeProduct?.githubUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-secondary"
-                    >
-                      <GithubIcon size={16} /> Visit Project Repository
-                    </a>
-                  </div>
-                ) : (
-                  releases.map((release, index) => (
-                    <div key={release.id} className="release-card">
-                      <div className="release-header">
-                        <div className="release-title-info">
-                          <h3>{release.name || release.tag_name}</h3>
-                          {index === 0 && <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>Latest</span>}
-                          {release.prerelease && <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>Pre-release</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Old Versions Section */}
+      {!loading && !error && oldReleases.length > 0 && (
+        <div className="px-4 sm:px-6 max-w-4xl mx-auto mt-16">
+          <div className="flex flex-col items-center">
+            <button
+              onClick={() => setShowOldVersions(!showOldVersions)}
+              className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium px-6 py-3 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+            >
+              {showOldVersions ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              {showOldVersions ? 'Hide Old Versions' : 'View Old Versions'}
+            </button>
+
+            {showOldVersions && (
+              <div className="w-full mt-8 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                {oldReleases.map((release) => (
+                  <div key={release.id} className="glass-card rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden">
+                    <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-3">
+                          <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                            {release.name || release.tag_name}
+                          </h4>
+                          {release.prerelease && <span className="px-2 py-0.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[10px] font-bold rounded-full uppercase">Pre-release</span>}
                         </div>
-                        <div className="release-date">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
                           <Calendar size={14} /> {formatDate(release.published_at)}
-                        </div>
+                        </p>
                       </div>
+                      <button
+                        onClick={() => setExpandedOldVersionId(expandedOldVersionId === release.id ? null : release.id)}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-full border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 font-medium text-sm transition-colors text-gray-700 dark:text-gray-200"
+                      >
+                        <Download size={16} />
+                        Download
+                        <ChevronDown size={16} className={`transition-transform duration-300 ${expandedOldVersionId === release.id ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
 
-                      {release.body && (
-                        <div className="release-body">
-                          <h4>Release Changelog</h4>
-                          <pre className="release-notes-content">
-                            {release.body}
-                          </pre>
-                        </div>
-                      )}
-
-                      <div className="assets-container">
-                        <h4>
-                          <Download size={16} style={{ color: 'var(--accent)' }} /> Available Files & Installers
-                        </h4>
-
+                    {/* Expandable Asset List */}
+                    {expandedOldVersionId === release.id && (
+                      <div className="bg-gray-50 dark:bg-black/20 p-4 sm:p-6 border-t border-gray-100 dark:border-white/5">
                         {release.assets.length === 0 ? (
-                          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                            No compiled binaries found. Download the source files directly on GitHub.
-                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No download files available for this version.</p>
                         ) : (
-                          <div className="assets-grid">
-                            {release.assets.map((asset) => {
-                              const meta = getAssetType(asset.name);
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {release.assets.map(asset => {
+                              const meta = getAssetMetadata(asset.name);
                               return (
-                                <div key={asset.id} className="asset-card">
-                                  <div className="asset-info">
-                                    <div className="asset-icon-box">
-                                      <FileArchive size={20} />
-                                    </div>
-                                    <div className="asset-details">
-                                      <span className="asset-name" title={asset.name}>
-                                        {asset.name}
-                                      </span>
-                                      <div className="asset-stats">
-                                        <span className="badge" style={{ padding: '2px 8px', fontSize: '0.65rem' }}>{meta.label}</span>
-                                        <span>{formatBytes(asset.size)}</span>
-                                        <span>
-                                          <BarChart size={11} /> {asset.download_count} downloads
-                                        </span>
-                                      </div>
-                                    </div>
+                                <a
+                                  key={asset.name}
+                                  href={asset.browser_download_url}
+                                  className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-white/5 hover:border-primary-500/50 border border-transparent hover:shadow-sm transition-all group/asset"
+                                >
+                                  <div className="w-10 h-10 rounded-lg bg-gray-50 dark:bg-white/5 flex items-center justify-center text-xl shrink-0 group-hover/asset:bg-primary-50 dark:group-hover/asset:bg-primary-500/10 transition-colors">
+                                    {meta.icon}
                                   </div>
-                                  <a
-                                    href={asset.browser_download_url}
-                                    className="asset-download-btn"
-                                    title={`Download ${asset.name}`}
-                                  >
-                                    <Download size={14} />
-                                  </a>
-                                </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate group-hover/asset:text-primary-500 transition-colors">
+                                      {asset.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                      {meta.label} • {formatBytes(asset.size)}
+                                    </p>
+                                  </div>
+                                </a>
                               );
                             })}
                           </div>
                         )}
                       </div>
-                    </div>
-                  ))
-                )}
-              </>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
-          </main>
+          </div>
         </div>
-      </div>
-    </section>
+      )}
+
+      {/* Modal Overlay for Latest Release & Donate */}
+      {activeModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={closeModal} />
+          
+          <div className="relative bg-white dark:bg-[#0F172A] w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  {activeModal === 'downloads' && <Download size={20} className="text-primary-500" />}
+                  {activeModal === 'changelogs' && <FileText size={20} className="text-primary-500" />}
+                  {activeModal === 'donate' && <Heart size={20} className="text-pink-500 fill-pink-500" />}
+                  {activeModal === 'downloads' ? 'Latest Download Assets' : activeModal === 'changelogs' ? 'Latest Change Logs' : 'Support Developer'}
+                </h3>
+                {latestRelease && activeModal !== 'donate' && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Version {latestRelease.tag_name} • {formatDate(latestRelease.published_at)}
+                  </p>
+                )}
+              </div>
+              <button onClick={closeModal} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              
+              {activeModal === 'donate' && (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Scan to Donate</h4>
+                  <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm">
+                    Thank you for your support! Scan the QR code below using any UPI app (PhonePe, GPay, Paytm) to donate.
+                  </p>
+                  <div className="bg-white p-4 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-transparent inline-block">
+                    <img 
+                      src="/donate-qr.png" 
+                      alt="UPI QR Code" 
+                      className="w-64 h-auto object-contain rounded-xl"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeModal === 'changelogs' && latestRelease && (
+                <div>
+                  {latestRelease.body ? (
+                    <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 dark:text-gray-300">
+                      {latestRelease.body}
+                    </pre>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">No change logs provided for this release.</p>
+                  )}
+                </div>
+              )}
+
+              {activeModal === 'downloads' && (
+                <div>
+                  {latestRelease.assets.length === 0 ? (
+                    <div className="text-center py-12">
+                      <HelpCircle size={32} className="mx-auto text-gray-400 mb-3 opacity-50" />
+                      <p className="text-gray-500 dark:text-gray-400">No compiled binaries found for this release.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      
+                      {/* OS Recommended Section */}
+                      {latestRelease.assets.filter(a => getAssetMetadata(a.name).type === userOS).length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-green-500 mb-3 ml-1">
+                            Recommended for your OS
+                          </h4>
+                          <div className="grid grid-cols-1 gap-3 mb-6">
+                            {latestRelease.assets
+                              .filter(a => getAssetMetadata(a.name).type === userOS)
+                              .map(asset => {
+                                const meta = getAssetMetadata(asset.name);
+                                return (
+                                  <a
+                                    key={asset.name}
+                                    href={asset.browser_download_url}
+                                    className="flex items-center gap-4 p-4 rounded-xl border-2 border-green-500/30 bg-green-50/50 dark:bg-green-500/5 hover:border-green-500/60 hover:shadow-md transition-all group/asset"
+                                  >
+                                    <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center text-2xl shrink-0 text-green-600 dark:text-green-400 shadow-sm">
+                                      {meta.icon}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-bold text-gray-900 dark:text-white text-sm truncate group-hover/asset:text-green-600 dark:group-hover/asset:text-green-400 transition-colors">
+                                        {asset.name}
+                                      </p>
+                                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        {meta.label} • {formatBytes(asset.size)}
+                                      </p>
+                                    </div>
+                                    <div className="bg-green-500 text-white p-2 rounded-full shadow-sm group-hover/asset:scale-110 transition-transform">
+                                      <Download size={18} />
+                                    </div>
+                                  </a>
+                                );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* All other files */}
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 ml-1">
+                          All Files
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {latestRelease.assets
+                            .filter(a => getAssetMetadata(a.name).type !== userOS)
+                            .map(asset => {
+                              const meta = getAssetMetadata(asset.name);
+                              return (
+                                <a
+                                  key={asset.name}
+                                  href={asset.browser_download_url}
+                                  className="flex items-center gap-4 p-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-primary-500/50 hover:shadow-md transition-all group/asset"
+                                >
+                                  <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-white/5 flex items-center justify-center text-xl shrink-0 group-hover/asset:bg-primary-50 dark:group-hover/asset:bg-primary-500/10 transition-colors">
+                                    {meta.icon}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate group-hover/asset:text-primary-500 transition-colors">
+                                      {asset.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                      {meta.label} • {formatBytes(asset.size)}
+                                    </p>
+                                  </div>
+                                </a>
+                              );
+                          })}
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,17 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Search, Download, ArrowRight } from 'lucide-react';
-import { GithubIcon } from './icons';
-
-export interface Product {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  tags: string[];
-  featured: boolean;
-  status: string;
-  githubUrl: string;
-}
+import { Terminal } from 'lucide-react';
+import type { Product } from '../App';
 
 interface ProjectsProps {
   products: Product[];
@@ -20,136 +8,69 @@ interface ProjectsProps {
 }
 
 export default function Projects({ products, setActiveTab, setSelectedProductId }: ProjectsProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-
-  // Extract unique categories
-  const categories = useMemo(() => {
-    const list = new Set(products.map((p) => p.category));
-    return ['All', ...Array.from(list)];
-  }, [products]);
-
-  // Filter products based on search and category
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchesSearch =
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [products, searchQuery, selectedCategory]);
-
-  const handleDownloadClick = (productId: string) => {
-    setSelectedProductId(productId);
+  const handleDownloadClick = (id: string) => {
+    setSelectedProductId(id);
     setActiveTab('downloads');
   };
 
   return (
-    <section className="section">
-      <div className="container">
-        <div className="hero">
-          <div className="hero-badge">
-            <span className="badge">AmorSoftLabs Suite</span>
-          </div>
-          <h1>
-            Crafting Premium <br />
-            <span className="gradient-text">Open Source Solutions</span>
-          </h1>
-          <p className="hero-subtitle">
-            Explore our curated catalog of desktop applications, web systems, and utilities. Built
-            for speed, elegance, and extreme developer experience.
-          </p>
-          <div className="hero-cta">
-            <button className="btn-primary" onClick={() => handleDownloadClick(products[0]?.id || '')}>
-              Get Started <ArrowRight size={18} />
-            </button>
-            <button className="btn-secondary" onClick={() => setActiveTab('about')}>
-              Learn About Us
-            </button>
-          </div>
-        </div>
-
-        <div className="section-header">
-          <h2>Product Catalog</h2>
-          <p>Search and filter our projects to find what you need</p>
-        </div>
-
-        <div className="search-filter-bar">
-          <div className="search-input-wrapper">
-            <Search className="search-icon" size={18} />
-            <input
-              type="text"
-              placeholder="Search by name, tag, tech..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
+    <div className="w-full">
+      {/* Projects Grid Section */}
+      <section className="py-20 bg-gray-50 dark:bg-[#0B0F19] border-t border-gray-200 dark:border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Core Projects</h2>
+            <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              Discover the advanced tools transforming your workflow with unmatched precision and intelligence.
+            </p>
           </div>
 
-          <div className="categories-filter">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`filter-btn ${selectedCategory === category ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(category)}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {products.map((product) => (
+              <div 
+                key={product.id} 
+                className="glass-card rounded-[24px] p-8 sm:p-10 transition-all hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-2xl dark:hover:shadow-black/50 group flex flex-col"
               >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {filteredProducts.length === 0 ? (
-          <div className="glass-card" style={{ textAlign: 'center', padding: '48px' }}>
-            <p style={{ color: 'var(--text-secondary)' }}>No projects found matching your query.</p>
-          </div>
-        ) : (
-          <div className="projects-grid">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="glass-card project-card">
-                <div className="project-header">
-                  <div className="project-meta">
-                    <span className="project-category">{product.category}</span>
-                    <h3>{product.title}</h3>
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center">
+                    <Terminal size={28} />
                   </div>
-                  <span className={`badge ${product.status === 'Active' ? '' : 'badge-beta'}`} 
-                        style={product.status !== 'Active' ? { background: 'rgba(245,158,11,0.15)', color: '#f59e0b' } : {}}>
-                    {product.status}
-                  </span>
+                  {product.featured && (
+                    <span className="px-3 py-1 bg-gradient-bg text-gray-900 dark:text-white text-xs font-bold rounded-full shadow-sm">
+                      Featured
+                    </span>
+                  )}
                 </div>
 
-                <p className="project-description">{product.description}</p>
-
-                <div className="project-tags">
-                  {product.tags.map((tag) => (
-                    <span key={tag} className="project-tag">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-primary-500 transition-colors">
+                  {product.title}
+                </h3>
+                
+                <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-8 flex-1">
+                  {product.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-2 mb-8">
+                  {product.tags.map(tag => (
+                    <span key={tag} className="px-3 py-1 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-full border border-gray-200 dark:border-white/10">
                       {tag}
                     </span>
                   ))}
                 </div>
 
-                <div className="project-actions">
-                  <button className="btn-primary" onClick={() => handleDownloadClick(product.id)}>
-                    <Download size={16} /> Downloads
-                  </button>
-                  <a
-                    href={product.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-secondary"
+                <div className="flex items-center gap-4 pt-6 border-t border-gray-100 dark:border-white/10">
+                  <button
+                    onClick={() => handleDownloadClick(product.id)}
+                    className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium h-11 rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                   >
-                    <GithubIcon size={16} /> Repository
-                  </a>
+                    Downloads
+                  </button>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
-    </section>
+        </div>
+      </section>
+    </div>
   );
 }

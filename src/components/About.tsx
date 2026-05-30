@@ -1,22 +1,19 @@
-import { useState } from 'react';
-import { Cpu, Send, CheckCircle2, ShieldAlert, Award, Globe, Rocket } from 'lucide-react';
+import React, { useState } from 'react';
+import { Rocket, Award, Globe, Cpu, Mail, Send, CheckCircle2 } from 'lucide-react';
 
 export default function About() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) {
-      setStatus('error');
-      return;
-    }
+    if (!formData.name || !formData.email || !formData.message) return;
 
     setStatus('loading');
-    // Simulate sending message to backend
     setTimeout(() => {
       setStatus('success');
       setFormData({ name: '', email: '', message: '' });
+      setTimeout(() => setStatus('idle'), 3000);
     }, 1500);
   };
 
@@ -36,58 +33,61 @@ export default function About() {
     { name: 'React', desc: 'UI Core' },
     { name: 'Electron', desc: 'Desktop Apps' },
     { name: 'Node.js', desc: 'Backends' },
-    { name: 'Go / Golang', desc: 'High-perf microservices' },
-    { name: 'Flutter', desc: 'Cross-platform Mobile' },
-    { name: 'GraphQL', desc: 'APIs' },
-    { name: 'PostgreSQL', desc: 'Relational DBs' }
+    { name: 'Go', desc: 'Microservices' },
+    { name: 'Flutter', desc: 'Mobile Apps' }
   ];
 
   return (
-    <section className="section">
-      <div className="container">
-        <div className="section-header">
-          <h2>About AmorSoftLabs</h2>
-          <p>Innovating digital solutions with clean architectures and gorgeous user interfaces</p>
+    <div className="w-full bg-gray-50 dark:bg-[#0B0F19] min-h-screen pt-16 pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        
+        {/* Header */}
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">About AmorSoftLabs</h2>
+          <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-lg">
+            Innovating digital solutions with clean architectures and gorgeous user interfaces.
+          </p>
         </div>
 
-        <div className="about-grid">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
           {/* Main Info */}
-          <div className="about-info">
-            <div className="glass-card">
-              <h2 style={{ marginBottom: '16px' }}>Who We Are</h2>
-              <p className="about-text" style={{ marginBottom: '16px' }}>
+          <div className="lg:col-span-7 flex flex-col gap-6">
+            <div className="glass-card rounded-3xl p-8 sm:p-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Who We Are</h2>
+              <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-4 text-lg">
                 AmorSoftLabs is a development studio dedicated to crafting state-of-the-art tools,
                 utilities, and core libraries. We specialize in cross-platform desktop engineering,
                 hybrid mobile application pipelines, and performant web microservices.
               </p>
-              <p className="about-text">
+              <p className="text-gray-500 dark:text-gray-400 leading-relaxed text-lg">
                 All our products are developed open-source. We prioritize clean architectures, 
                 high speed, zero bloated code bases, and premium design language.
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {coreValues.map((value, idx) => (
-                <div key={idx} className="glass-card" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                  <div className="asset-icon-box" style={{ width: '48px', height: '48px', borderRadius: '12px' }}>
+                <div key={idx} className="glass-card rounded-3xl p-6 md:col-span-2 lg:col-span-1 flex gap-4 items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-primary-500/10 text-primary-500 flex items-center justify-center flex-shrink-0">
                     {value.icon}
                   </div>
                   <div>
-                    <h4 style={{ fontSize: '1.1rem', marginBottom: '6px' }}>{value.title}</h4>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: 1.5 }}>{value.desc}</p>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{value.title}</h4>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{value.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="glass-card">
-              <h3 style={{ marginBottom: '16px' }}>Technology Matrix</h3>
-              <div className="tech-grid">
-                {technologies.map((tech) => (
-                  <div key={tech.name} className="tech-item">
-                    <Cpu size={18} />
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{tech.name}</span>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--text-muted)' }}>{tech.desc}</span>
+            <div className="glass-card rounded-3xl p-8 sm:p-10 mt-2">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Technology Matrix</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {technologies.map(tech => (
+                  <div key={tech.name} className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 text-center transition-transform hover:-translate-y-1">
+                    <Cpu size={24} className="text-primary-500 mb-2" />
+                    <span className="font-bold text-sm text-gray-900 dark:text-white mb-1">{tech.name}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{tech.desc}</span>
                   </div>
                 ))}
               </div>
@@ -95,90 +95,84 @@ export default function About() {
           </div>
 
           {/* Contact Form */}
-          <div className="contact-card glass-card">
-            <h3>Get In Touch</h3>
-            <p>Have questions about our software or looking for custom collaborations? Shoot us a message.</p>
+          <div className="lg:col-span-5">
+            <div className="glass-card rounded-3xl p-8 sm:p-10 sticky top-24">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Get In Touch</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                Have questions about our software or looking for custom collaborations? Shoot us a message.
+              </p>
 
-            {status === 'success' && (
-              <div className="form-status success">
-                <CheckCircle2 size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-                Your message has been sent successfully! We will get back to you shortly.
-              </div>
-            )}
-
-            {status === 'error' && (
-              <div className="form-status error">
-                <ShieldAlert size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-                Please fill out all the fields in the form.
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="name">Full Name</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Enter your name"
-                    disabled={status === 'loading'}
-                  />
+              {status === 'success' && (
+                <div className="mb-6 p-4 bg-green-500/10 text-green-600 dark:text-green-400 rounded-2xl border border-green-500/20 flex items-center gap-3 font-medium">
+                  <CheckCircle2 size={20} />
+                  Message sent successfully!
                 </div>
-              </div>
+              )}
 
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Enter your email"
-                    disabled={status === 'loading'}
-                  />
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Name</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="John Doe"
+                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label htmlFor="message">Message</label>
-                <textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  className="form-input"
-                  placeholder="How can we help you?"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Email</label>
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="john@example.com"
+                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 ml-1">Message</label>
+                  <textarea
+                    name="message"
+                    required
+                    rows={4}
+                    value={formData.message}
+                    onChange={handleChange}
+                    placeholder="How can we help you?"
+                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all resize-none"
+                  ></textarea>
+                </div>
+
+                <button
+                  type="submit"
                   disabled={status === 'loading'}
-                ></textarea>
-              </div>
-
-              <button
-                type="submit"
-                className="btn-primary btn-submit"
-                disabled={status === 'loading'}
-              >
-                {status === 'loading' ? (
-                  <>
-                    <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} /> Send Message
-                  </>
-                )}
-              </button>
-            </form>
+                  className="mt-2 w-full flex items-center justify-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-70 disabled:hover:bg-primary-500 text-white font-medium py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-primary-500/25"
+                >
+                  {status === 'loading' ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      Send Message
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
