@@ -144,7 +144,7 @@ export default function Downloads({ products, selectedProductId }: DownloadsProp
   };
 
   if (!selectedProduct && products.length > 0) {
-    navigate(`/downloads/${products[0].id}`, { replace: true });
+    navigate(`/${products[0].id}`, { replace: true });
     return null;
   }
 
@@ -152,7 +152,7 @@ export default function Downloads({ products, selectedProductId }: DownloadsProp
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product not found</h2>
-        <button onClick={() => navigate('/downloads')} className="mt-4 text-primary-500 hover:underline">
+        <button onClick={() => navigate('/home')} className="mt-4 text-primary-500 hover:underline">
           Go back
         </button>
       </div>
@@ -173,7 +173,7 @@ export default function Downloads({ products, selectedProductId }: DownloadsProp
               {products.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => navigate(`/downloads/${p.id}`)}
+                  onClick={() => navigate(`/${p.id}`)}
                   className={`shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                     p.id === activeProductId
                       ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'

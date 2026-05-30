@@ -14,9 +14,11 @@ export default function Navbar({ theme, toggleTheme, products = [], setSelectedP
   const location = useLocation();
 
   const currentPath = location.hash.replace('#', '') || '/home';
+  const isProductPage = !['/', '/home', '/projects', '/about'].includes(currentPath);
 
   const getTabClass = (path: string) => {
-    if (currentPath === path) {
+    const isActive = path === '/:productId' ? isProductPage : currentPath === path;
+    if (isActive) {
       return "text-sm px-4 py-1.5 rounded-full bg-white dark:bg-white/10 font-medium text-gray-800 dark:text-white/90 shadow-sm transition-all";
     }
     return "text-gray-500 dark:text-gray-400 text-sm px-4 py-1.5 rounded-full hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-white/5 font-medium transition-all cursor-pointer";
@@ -26,7 +28,7 @@ export default function Navbar({ theme, toggleTheme, products = [], setSelectedP
     if (setSelectedProductId) {
       setSelectedProductId(id);
     }
-    navigate(`/downloads/${id}`);
+    navigate(`/${id}`);
   };
 
   return (
@@ -60,7 +62,7 @@ export default function Navbar({ theme, toggleTheme, products = [], setSelectedP
             
             {/* Downloads Dropdown */}
             <div className="relative group/dropdown">
-              <button onClick={() => navigate('/downloads')} className={`${getTabClass('/downloads')} flex items-center gap-1`}>
+              <button onClick={() => navigate(`/${products[0]?.id || 'home'}`)} className={`${getTabClass('/:productId')} flex items-center gap-1`}>
                 Downloads
                 <ChevronDown size={14} className="opacity-50 group-hover/dropdown:rotate-180 transition-transform duration-200" />
               </button>

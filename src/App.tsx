@@ -126,21 +126,16 @@ function AppLayout() {
               setSelectedProductId={setSelectedProductId}
             />
           } />
-          <Route path="/downloads" element={
-            <Downloads
-              products={products}
-              selectedProductId={selectedProductId}
-              setSelectedProductId={setSelectedProductId}
-            />
-          } />
-          <Route path="/downloads/:productId" element={
-            <Downloads
-              products={products}
-              selectedProductId={selectedProductId}
-              setSelectedProductId={setSelectedProductId}
-            />
-          } />
+          <Route path="/downloads" element={<Navigate to={`/${products[0]?.id || 'home'}`} replace />} />
           <Route path="/about" element={<About />} />
+          {/* Product-specific routes e.g. /#/music-club */}
+          <Route path="/:productId" element={
+            <Downloads
+              products={products}
+              selectedProductId={selectedProductId}
+              setSelectedProductId={setSelectedProductId}
+            />
+          } />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
